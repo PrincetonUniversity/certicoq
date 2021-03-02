@@ -21,7 +21,7 @@ Open Scope monad_scope.
 
 Section Tags.
 
-  Context (prim_map : M.t (kername * string (* C definition *) * nat (* arity *))) 
+  Context (prim_map : M.t (kername * string (* C definition *) * bool (* tinfo *) * nat (* arity *))) 
           (fun_tag : fun_tag) (* Unary function tag *)  
           (default_tag : ctor_tag)
           (default_itag : ind_tag)

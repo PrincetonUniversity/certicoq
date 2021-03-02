@@ -33,7 +33,7 @@ Instance L4_Lang : Lang L4Term :=
     BigStep := fun P Res => exists n, L4.expression.eval_n n (snd P) = Some Res
   }.
 
-Definition compile_L4 (prims : list (kername * string * nat * positive))
+Definition compile_L4 (prims : list (kername * string * bool * nat * positive))
   : CertiCoqTrans L3_eta_Program L4Term :=
   fun src =>
     debug_msg "Translating from L2k to L4" ;;

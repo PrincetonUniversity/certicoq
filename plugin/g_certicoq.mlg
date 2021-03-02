@@ -28,7 +28,9 @@ END
 
 
 VERNAC ARGUMENT EXTEND extract_cnst 
-| [ reference(gr) "=>" string(str) ] -> { extract_constant (Constrintern.locate_reference gr) str }
+| [ reference(gr) "=>" string(str) ] -> { (extract_constant (Constrintern.locate_reference gr) str, false) }
+| [ reference(gr) "=>" string(str) "with" "tinfo" ] -> { (extract_constant (Constrintern.locate_reference gr) str, true) }
+
 END
 
 

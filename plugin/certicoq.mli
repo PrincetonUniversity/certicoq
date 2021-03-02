@@ -23,11 +23,11 @@ type options =
     ext       : string;
     dev       : int;
     prefix    : string;
-    prims     : (BasicAst.kername * char list) list;
+    prims     : ((BasicAst.kername * char list) * bool) list;
   }
 
 val default_options : options
-val make_options : command_args list -> (BasicAst.kername * char list) list -> string -> options
+val make_options : command_args list -> ((BasicAst.kername * char list) * bool) list -> string -> options
 
 val get_name : Names.GlobRef.t -> string
   

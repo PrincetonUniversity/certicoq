@@ -24,7 +24,7 @@ Require Import compcert.common.AST
         compcert.common.Values.
 
 
-Require Import L6.set_util L6.cps L6.identifiers L6.cps_show L6.state.
+Require Import L6.set_util L6.cps L6.identifiers L6.cps_show L6.state L6.toplevel.
 Require Import Clightdefs.
 
 Section TRANSLATION.
@@ -45,6 +45,7 @@ Variable (isptrIdent : ident). (* ident for the is_ptr external function *)
 Variable (caseIdent : ident). (* ident for the case variable , TODO: generate that automatically and only when needed *)
 Variable (nParam:nat).
 
+Variable (prims : prim_env).
 
 Definition show_name (name : BasicAst.name) : string :=
   match name with
@@ -310,11 +311,8 @@ Definition mkFunTy (n : nat) :=
 Definition mkPrimTy (n : nat) :=
   (Tfunction (mkFunTyList n) val cc_default).
 
-Notation make_tinfoTy :=
-  (Tfunction Tnil threadInf cc_default).
-
-Notation exportTy :=
-  (Tfunction (Tcons threadInf Tnil) valPtr cc_default).
+Definition mkPrimTyTinfo (n : nat) :=
+  (Tfunction (Tcons threadInf (mkFunTyList n)) val cc_default).
 
 
 Notation "'var' x" := (Etempvar x val) (at level 20).
@@ -545,6 +543,11 @@ Definition mkPrimCall (res : positive) (pr : positive) (ar : nat)  (fenv : fun_e
   ret (Scall (Some res) ([mkPrimTy ar] (Evar pr (mkPrimTy ar))) args).
 
 
+Definition mkPrimCallTinfo (res : positive) (pr : positive) (ar : nat)  (fenv : fun_env) (map: fun_info_env) (vs : list positive) : error statement :=
+  args <- mkCallVars fenv map ar vs ;;  
+  ret (Scall (Some res) ([mkPrimTyTinfo ar] (Evar pr (mkPrimTyTinfo ar))) (tinf :: args)).
+
+
 Fixpoint asgnFunVars' (vs : list positive) (ind : list N) : error statement :=
   match vs with
   | nil =>
@@ -749,35 +752,36 @@ Section Translation.
             let (push, slots) := push_live_vars fvs_list in
             (push ; update_stack slots; set_stack slots false, slots)
         in
-        let discard_stack := pop_live_vars fvs_list; reset_stack slots_call false in
-  match M.get t fenv return (error (statement * N)) with 
-  | Some inf =>
-    let name :=
-        match M.get f nenv with
-        | Some n => show_name n
-        | None => "not an entry"
+        match M.get t fenv return (error (statement * N)) with 
+        | Some inf =>
+          let name :=
+              match M.get f nenv with
+              | Some n => show_name n
+              | None => "not an entry"
+              end
+          in
+          asgn <- (if args_opt then asgnAppVars_fast fun_vars vs locs (snd inf) fenv map name
+                   else asgnAppVars vs (snd inf) fenv map name) ;;
+          let f_var := makeVar f fenv map in
+          let pnum := min (N.to_nat (fst inf)) nParam in
+          c <- (mkCall None fenv map ([Tpointer (mkFunTy pnum) noattr] f_var) pnum vs) ;;
+          let alloc := max_allocs e' in
+          (* Call GC after the call if needed *)
+          let (gc_call, slots_gc) := make_GC_call alloc fv_gc slots_call in
+          (* Pop live vars from the stack *)
+          let discard_stack := pop_live_vars fvs_list; reset_stack slots_call false in
+          progn <- translate_body e' fenv cenv ienv map (N.max slots slots_gc);;
+          Ret ((asgn ; Efield tinfd allocIdent valPtr :::= allocPtr ; Efield tinfd limitIdent valPtr  :::= limitPtr;
+               make_stack;
+               c;
+               allocIdent ::= Efield tinfd allocIdent valPtr; limitIdent ::= Efield tinfd limitIdent valPtr;
+               x ::= Field(args, Z.of_nat 1);
+               gc_call;
+               discard_stack;
+               fst progn),
+               snd progn)
+        | None => Err "translate_body: Unknown function application in Eletapp"
         end
-    in
-    asgn <- (if args_opt then asgnAppVars_fast fun_vars vs locs (snd inf) fenv map name
-             else asgnAppVars vs (snd inf) fenv map name) ;;
-    let f_var := makeVar f fenv map in
-    let pnum := min (N.to_nat (fst inf)) nParam in
-    c <- (mkCall None fenv map ([Tpointer (mkFunTy pnum) noattr] f_var) pnum vs) ;;
-    let alloc := max_allocs e' in
-    (* Call GC after the call if needed *)
-    let (gc_call, slots_gc) := make_GC_call alloc fv_gc slots_call in
-    progn <- translate_body e' fenv cenv ienv map (N.max slots slots_gc);;
-    Ret ((asgn ; Efield tinfd allocIdent valPtr :::= allocPtr ; Efield tinfd limitIdent valPtr  :::= limitPtr;
-         make_stack;
-         c;
-         allocIdent ::= Efield tinfd allocIdent valPtr; limitIdent ::= Efield tinfd limitIdent valPtr;
-         x ::= Field(args, Z.of_nat 1);
-         gc_call;
-         discard_stack;
-         fst progn),
-         snd progn)
-  | None => Err "translate_body: Unknown function application in Eletapp"
-  end
   | Eproj x t n v e' =>
     progn <- translate_body e' fenv cenv ienv map slots ;;
     Ret ((x ::= Field(var v, Z.of_N n) ; fst progn), snd progn)
@@ -799,10 +803,41 @@ Section Translation.
                                                                                                                   slots)
     | None => Err "translate_body: Unknown function application in Eapp"
     end
-  | Eprim x p vs e' =>    
-    c <- mkPrimCall x p (length vs) fenv map vs ;;
-    '(prog, slots) <- translate_body e' fenv cenv ienv map slots ;;
-    ret (c; prog, slots)
+  | Eprim x p vs e' =>
+    match prims ! p with
+    | Some (_, _, false, _) => (* compile without tinfo *) 
+      c <- mkPrimCall x p (length vs) fenv map vs ;;
+      '(prog, slots) <- translate_body e' fenv cenv ienv map slots ;;
+      ret (c; prog, slots)
+    | Some (_, _, true, _) =>
+      (* Compute the local variables that are live after the call  *)
+        let fvs_post_call := PS.inter (exp_fv e') loc_vars in
+        let fvs := PS.remove x fvs_post_call in
+        let fvs_list := PS.elements fvs in
+        (* Check if the new binding has to be pushed to the frame during the GC call *)
+        let fv_gc := if PS.mem x fvs_post_call then cons x nil else nil in
+        (* push live vars to the stack. We're pushing exactly the vars that are live beyond the current point. *)
+        let '(make_stack, slots_call) :=
+            let (push, slots) := push_live_vars fvs_list in
+            (push ; update_stack slots; set_stack slots false, slots)
+        in
+        c <- mkPrimCallTinfo x p (length vs) fenv map vs ;;
+        let alloc := max_allocs e' in
+        (* Call GC after the call if needed *)
+        let (gc_call, slots_gc) := make_GC_call alloc fv_gc slots_call in
+        (* Pop live vars from the stack *)
+        let discard_stack := pop_live_vars fvs_list; reset_stack slots_call false in
+        '(prog, slots) <- translate_body e' fenv cenv ienv map (N.max slots slots_gc);; 
+        Ret ((Efield tinfd allocIdent valPtr :::= allocPtr ; Efield tinfd limitIdent valPtr  :::= limitPtr;
+             make_stack;
+             c;
+             allocIdent ::= Efield tinfd allocIdent valPtr; limitIdent ::= Efield tinfd limitIdent valPtr;
+             gc_call;
+             discard_stack;
+             prog),
+             slots)
+    | None => Err "translate_body: Unknown primitive identifier"
+    end
   | Ehalt x =>
     (* set args[1] to x  and return *)
     ret ((args[ Z.of_nat 1 ] :::= (makeVar x fenv map));

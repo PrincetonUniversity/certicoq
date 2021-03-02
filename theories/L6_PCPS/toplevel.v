@@ -14,7 +14,7 @@ Import Monads.
 
 Import MonadNotation.
 
-Definition prim_env := M.t (kername * string (* C definition *) * nat (* arity *)). 
+Definition prim_env := M.t (kername * string (* C definition *) * bool (* tinfo *) * nat (* arity *)). 
 
 Let L6env : Type := eval.prims * prim_env * ctor_env * ctor_tag * ind_tag * name_env * fun_env * eval.env.
 
@@ -50,10 +50,10 @@ Section IDENT.
   Definition kon_fun_tag := 2%positive.
 
 
-  Definition make_prim_env (prims : list (kername * string * nat * positive)) : prim_env :=    
-    List.fold_left (fun map '(k, s, ar, p) => M.set p (k, s, ar) map) prims (M.empty _).  
+  Definition make_prim_env (prims : list (kername * string * bool * nat * positive)) : prim_env :=    
+    List.fold_left (fun map '(k, s, b, ar, p) => M.set p (k, s, b, ar) map) prims (M.empty _).  
   
-  Definition compile_L6_CPS (prims : list (kername * string * nat * positive)) : CertiCoqTrans toplevel.L4Term L6_FullTerm :=
+  Definition compile_L6_CPS (prims : list (kername * string * bool * nat * positive)) : CertiCoqTrans toplevel.L4Term L6_FullTerm :=
     fun src => 
       debug_msg "Translating from L4 to L6 (CPS)" ;;
       LiftErrorCertiCoqTrans "L6 CPS"
@@ -66,7 +66,7 @@ Section IDENT.
                                 | None => Err "Error when compiling from L4 to L6"
                                 end) src.
 
-  Definition compile_L6_ANF (prims : list (kername * string * nat * positive)) : CertiCoqTrans toplevel.L4Term L6_FullTerm :=
+  Definition compile_L6_ANF (prims : list (kername * string * bool * nat * positive)) : CertiCoqTrans toplevel.L4Term L6_FullTerm :=
     fun src => 
       debug_msg "Translating from L4 to L6 (ANF)" ;;
       LiftErrorCertiCoqTrans "L6 ANF"
