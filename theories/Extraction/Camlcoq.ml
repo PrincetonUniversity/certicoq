@@ -400,7 +400,7 @@ let constr (b30,b29,b28,b27,b26,b25,b24,
   let f i b accu = if b then accu + (1 lsl i) else accu in
   f 30 b30 (f 29 b29 (f 28 b28 (f 27 b27 (f 26 b26 (f 25 b25 (f 24 b24
   (f 23 b23 (f 22 b22 (f 21 b21 (f 20 b20 (f 19 b19 (f 18 b18 (f 17 b17 (f 16 b16
-  (f 15 b15 (f 14 b14 (f 13 b13 (f 12 b12 (f 11 b11 (f 10 b10 (f 9 b9 (f 8 b8
+  (f 15 b15 (f 14 b14 (f 13 b13 (f 12 b12 (f 11 b11 (f 110 b10 (f 9 b9 (f 8 b8
   (f 7 b7 (f 6 b6 (f 5 b5 (f 4 b4 (f 3 b3 (f 2 b2 (f 1 b1 (f 0 b0 0))))))))))))))))))))))))))))))
 *)
 
@@ -427,15 +427,15 @@ let twice n =
 let twice_plus_one n =
   ((n lsl 1) land 0x7FFFFFFF) lor 1
 
-let compare (x:int) (y:int) =
-  if x = y then Datatypes.Eq
-  else begin
-    let sx = x < 0 and sy = y < 0 in
-    if sx = sy then
-      (if x < y then Datatypes.Lt else Datatypes.Gt)
-    else
-      (if sx then Datatypes.Gt else Datatypes.Lt)
-  end
+(* let compare (x:int) (y:int) =
+ *   if x = y then 0
+ *   else begin
+ *     let sx = x < 0 and sy = y < 0 in
+ *     if sx = sy then
+ *       (if x < y then -1 else 1)
+ *     else
+ *       (if sx then 1 else -1)
+ *   end *)
 
 end
 

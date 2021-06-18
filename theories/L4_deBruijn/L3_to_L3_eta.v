@@ -26,7 +26,7 @@ Require Import L4.expression.
 (** Tactics *)
 Ltac forward H :=
   match type of H with
-  | ?T -> _ => let H' := fresh in cut T;[intros H'; specialize (H H') | ]
+  | ?T -> _ => let H' := fresh in enough (H' : T);[ specialize (H H'); clear H' | ]
   end.
 
 Import L3t.
