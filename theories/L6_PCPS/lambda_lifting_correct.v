@@ -1073,8 +1073,6 @@ Section Lambda_lifting_correct.
         * econstructor 2.
           econstructor; try eassumption. rewrite map_app. eapply get_list_app; eauto.
           now eauto.
-        * simpl. eapply PG_P_local_steps_let_app. eassumption. eassumption. eassumption.
-          eassumption. eassumption.
         * eapply preord_res_monotonic. eassumption.
           rewrite !to_nat_add. unfold one. rewrite to_nat_one. lia. 
       + edestruct preord_env_P_inj_get_list_l as [vs' [Hgetl' Hprevs]]; try eassumption.

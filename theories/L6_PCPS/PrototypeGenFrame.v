@@ -7,7 +7,7 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 
 From MetaCoq Require Import Template.All.
-Import MonadNotation.
+Import MCMonadNotation.
 Module TM := MetaCoq.Template.monad_utils.
 
 From ExtLib.Core Require Import RelDec.
@@ -600,7 +600,7 @@ Definition gen_univ_univD (qual : modpath) (typename : kername) (g : mind_graph_
     mind_entry_inds := [ind_entry];
     mind_entry_universes := Monomorphic_entry (LevelSet.empty, ConstraintSet.empty);
     mind_entry_template := false;
-    mind_entry_cumulative := false;
+    mind_entry_variance := None;
     mind_entry_private := None |}, ty_ns, (qual, snd typename +++ "_univD"), body).
 
 Definition holes_of {A} (xs : list A) : list ((list A × A) × list A) :=
@@ -676,7 +676,7 @@ Definition gen_frame_t (qual : modpath) (typename : kername) (inds : ind_info) (
     mind_entry_inds := [ind_entry];
     mind_entry_universes := Monomorphic_entry (LevelSet.empty, ConstraintSet.empty);
     mind_entry_template := false;
-    mind_entry_cumulative := false;
+    mind_entry_variance := None;
     mind_entry_private := None |}.
 
 Definition gen_frameD (qual : modpath) (typename : kername) (univD_kername : kername) (fs : list frame)

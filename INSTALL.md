@@ -11,6 +11,13 @@ CertiCoq depends on the following Coq packages:
 
 The dependencies can either be installed manually (from sources or via `opam`) or automatically via provided submodules.
 
+##### Installation of dependencies via opam
+
+All dependencies can be installed directly from the information in the `opam` file:
+
+    # opam repo add coq-released https://coq.inria.fr/opam/released
+    # opam install . --deps-only
+
 ##### Manual installation of dependencies
 
 ###### Ext-lib
@@ -19,11 +26,11 @@ You can install [ExtLib](https://github.com/coq-community/coq-ext-lib) (v0.11.2)
 
 ###### Equations
 
-You can install [Equations](https://github.com/mattam82/Coq-Equations) (v1.2.3) from opam or from their source code or from opam with `opam install coq-equations.1.2.3+8.12`.
+You can install [Equations](https://github.com/mattam82/Coq-Equations) (v1.2.3) from the source code or from opam with `opam install coq-equations.1.2.3+8.12`.
 
 ###### MetaCoq
 
-Currently, MetaCoq needs to be installed manually from the `coq-8.12` branch in [MetaCoq's github](https://github.com/MetaCoq/metacoq/tree/coq-8.12). 
+You can install [MetaCoq](https://metacoq.github.io/) (1.0~beta2+8.12) from the source code or from opam with `opam install coq-metacoq-erasure.1.0~beta2+8.12`.
 
 ##### Installation of dependencies via submodules
 

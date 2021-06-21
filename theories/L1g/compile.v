@@ -22,6 +22,10 @@ Arguments dbody {term} _.
 Arguments dtype {term} _.
 Arguments rarg {term} _.
 
+Notation ret := (ExtLib.Structures.Monad.ret).
+Notation bind := (ExtLib.Structures.Monad.bind).
+Notation raise := (ExtLib.Structures.MonadExc.raise).
+
 (** A slightly cleaned up notion of object term.
 *** The simultaneous definitions of [Terms] and [Defs] make
 *** inductions over this type long-winded but straightforward.
@@ -222,7 +226,7 @@ Fixpoint print_global_declarations (g:global_declarations) : string :=
   end.
 
 (** can compile terms using global_declarations from EAst.v **)
-Instance fix_bug : MonadExc string exception := exn_monad_exc.
+Instance fix_bug : MonadExc.MonadExc string exception := exn_monad_exc.
 
 Definition Cstr_npars_nargs
   (g:global_declarations) (ind:BasicAst.inductive) (ncst:nat): exception (nat * nat) :=
@@ -300,13 +304,13 @@ From MetaCoq.PCUIC Require Import TemplateToPCUIC.
 From MetaCoq.Erasure Require Import ErasureFunction Erasure.
 Require Import Common.classes Common.Pipeline_utils Common.compM.
 
-Existing Instance envcheck_monad.
+Existing Instance PCUICErrors.envcheck_monad.
 
 Open Scope string_scope.
      
 Definition erase (p:Template.Ast.program) : error (global_context × term) :=
   let p := fix_program_universes p in
-  match erase_template_program p with
+  match erase_template_program p (todo "wf_env") (todo "welltyped") with
     | (gc, t) => Ret (gc, t)
   end.
 

@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   OCAML_VERSION: 4.07.1+flambda
-  COQ_VERSION: 8.12.1
+  COQ_VERSION: 8.13.2
 
 jobs:
   build:
@@ -12,7 +12,8 @@ jobs:
 
     strategy:
       matrix:
-        target: [ submodules ]
+        target: [ submodules #, opam
+        ]
 
     steps:
 
@@ -33,9 +34,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: "~/.opam"
-          key: opam-${{ steps.submodule-hash.outputs.HASH }}-${{github.base_ref}}-${{github.ref}} 
+          key: opam-${{ matrix.target }}-${{ steps.submodule-hash.outputs.HASH }}-${{github.base_ref}}-${{github.ref}} 
           restore-keys: |
-            opam-${{ steps.submodule-hash.outputs.HASH }}--refs/heads/${{github.base_ref}}
+            opam-${{ matrix.target }}-${{ steps.submodule-hash.outputs.HASH }}--refs/heads/${{github.base_ref}}
 
       - name: Install OCaml
         uses: avsm/setup-ocaml@v1

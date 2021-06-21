@@ -273,6 +273,8 @@ Qed.
 Section wcbvEval_sec.
 Variable p:environ Term.
 
+Local Open Scope string_scope.
+
 Function wcbvEval
          (tmr:nat) (t:Term) {struct tmr}: exception Term :=
   match tmr with 

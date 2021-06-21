@@ -14,6 +14,8 @@ Require Import Common.classes.
 Open Scope list_scope.
 Set Implicit Arguments.
 
+Ltac inv H := inversion H; subst; clear H.
+
 (** Fix arguments scope for [mkInd]. *)
 Arguments mkInd _%string _%nat.
 

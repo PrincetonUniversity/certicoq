@@ -1134,7 +1134,7 @@ Lemma WFapp_mkApp:
   forall args t, WFapp (mkApp t args) -> WFapp t /\ WFapps args.
 Proof.
   induction args; intros.
-  - cbn in H. intuition. constructor.
+  - cbn in H. intuition. (* constructor. *)
   - change (WFapp (mkApp (TApp t a) args)) in H.
     specialize (IHargs _ H). destruct IHargs. inversion_Clear H0.
     split.

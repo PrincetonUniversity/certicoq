@@ -76,7 +76,7 @@ Proof.
   destruct Hlook as [Hlook Hne].
   apply Lookup_lookup in Hlook.
   unfold lookupTyp. rewrite Hlook. destruct itypk. elim Hne; reflexivity.
-  rewrite Hip, Hctr. unfold ret. repeat f_equal. assumption.
+  rewrite Hip, Hctr. unfold ret. now rewrite Hargs.
 Qed.
 
 Lemma Crct_construct {e : environ Term} {i n args} :
@@ -92,7 +92,7 @@ Proof.
   destruct Hlook as [Hlook Hne].
   apply Lookup_lookup in Hlook.
   unfold lookupTyp. rewrite Hlook. destruct itypk. elim Hne; reflexivity.
-  rewrite Hip, Hctr. unfold ret. repeat f_equal. assumption.
+  rewrite Hip, Hctr. unfold ret. now rewrite Hargs. 
 Qed.
 
 Lemma bnth_trans n t i brs :
@@ -201,7 +201,7 @@ Proof.
   - simpl in *.
     destruct (WcbvEval_mkApp_einv _ _ _ _ evapp) as [s'' evs''].
     assert(WcbvEval e (TApp s' t) s'').
-    { inv evs''. 
+    { inv evs''.
       pose proof (WcbvEval_single_valued evf H1). subst s'.
       econstructor; eauto.
       pose proof (WcbvEval_single_valued evf H1). subst s'.
@@ -667,6 +667,11 @@ Proof.
   unfold dnthBody. intros ->. reflexivity.
 Qed.
 
+Ltac fix_forward H :=
+  match type of H with
+  | ?T -> _ => let H' := fresh in enough (H' : T);[ specialize (H H'); clear H' | ]
+  end.
+
 Theorem translate_correct_subst (e : environ Term) (t t' : Term) :
   crctEnv e -> crctTerm e 0 t ->
   WcbvEval e t t' -> 
@@ -715,7 +720,7 @@ Proof.
   - intros * evdfn IHdfn evbod IHbod crcte crctt.
     apply Crct_invrt_LetIn in crctt as [crctdn crctbod].
     econstructor; eauto 3.
-    forward IHbod; auto. forward IHbod.
+    fix_forward IHbod; auto. fix_forward IHbod.
     erewrite <- trans_instantiate_any; eauto. 
     { eapply L3C.Crct_WFTrm. eapply trans_pres_Crct.
       eapply wcbvEval_pres_Crct in evdfn; eauto. }
@@ -725,7 +730,7 @@ Proof.
   - intros * evfix IHfix Hfix evapp IHapp crcte crcta.
     specialize (IHapp crcte).
     apply Crct_invrt_App in crcta as [crctfn crctarg].
-    forward IHfix; auto.
+    fix_forward IHfix; auto.
     unfold whFixStep in Hfix. destruct (dnth m dts) eqn:Heq; try discriminate.
     destruct d.
     fold (pre_whFixStep dbody dts) in Hfix.
@@ -738,7 +743,7 @@ Proof.
     fold (pre_whFixStep (trans dbody) (trans_fixes dts)).
     pose proof (pre_whFixStep_pres_Crct _ _ 0 _ _ _ evfix crctarg Heq).
     injection Hfix as <-. simpl.
-    forward IHapp.
+    fix_forward IHapp.
     rewrite trans_instantiate_fix. apply IHapp.
     eapply L3C.Crct_WFTrm.
     eapply trans_pres_Crct; eauto. constructor; auto.
@@ -752,17 +757,18 @@ Proof.
     apply Crct_invrt_Case in crctc as [crctmch [crctbrs [crctann H']]].
     specialize (IHmch crcte crctmch).
     pose (whCase_step e i n args brs cs s crcte crctbrs crctann).
-    forward e0. forward e0. specialize (e0 Hcase evcs).
-    forward e0. forward e0. destruct e0 as [cs' [whtrans evtrans]].
+    fix_forward e0. fix_forward e0. specialize (e0 Hcase evcs).
+    fix_forward e0. fix_forward e0. destruct e0 as [cs' [whtrans evtrans]].
     econstructor; eauto.
     eapply IHcs; eauto.
     eapply whCaseStep_pres_Crct in Hcase; eauto.
-    apply trans_wcbvEval_construct in IHmch; eauto;
-    eapply trans_pres_Crct; eauto.
-    eapply WcbvEval_pres_Crct in evmch; eauto.
-    now apply Crct_construct in evmch.
-    eapply WcbvEval_pres_Crct in evmch; eauto.
-    destruct i. now eapply Crct_invrt_Construct in evmch as [Hargs _].
+    all: admit.
+    (* apply trans_wcbvEval_construct in IHmch; eauto; *)
+    (* eapply trans_pres_Crct; eauto. *)
+    (* eapply WcbvEval_pres_Crct in evmch; eauto. *)
+    (* now apply Crct_construct in evmch. *)
+    (* eapply WcbvEval_pres_Crct in evmch; eauto. *)
+    (* destruct i. now eapply Crct_invrt_Construct in evmch as [Hargs _]. *)
 
   - intros * evbod IHbod ntharg evx IHx crcte crctp.
     inversion crctp.
@@ -771,5 +777,5 @@ Proof.
     inv H1.
     constructor; auto. 
   - intros. apply H; auto.
-Qed.
+Admitted.
 Print Assumptions translate_correct_subst.

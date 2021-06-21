@@ -237,7 +237,7 @@ Proof.
   split. eapply H. reflexivity. split. unfold Range, Ensembles.In. simpl. zify. lia.
   simpl. split. zify; lia.
   intros z Hin. constructor. eapply H; eauto. zify. lia.
-  intros Hc. inv Hc. zify; lia.
+  intros Hc. inversion Hc. subst. zify; lia.
 Qed.
 
 Lemma get_names_lst_spec A S ns str :

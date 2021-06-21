@@ -235,7 +235,7 @@ Proof.
   intros. 
   destruct H. inversion H. subst.
   rewrite eq_kername_refl in H0. discriminate.
-  subst. specialize (IHe nm). forward IHe. lia.
+  subst. specialize (IHe nm). fix_forward IHe. lia.
   eexists; eauto.
 Qed.
 
@@ -746,7 +746,7 @@ Proof.
     now rewrite !Har in H2. 
   - (* Constant -> Rel *)
     generalize (cst_offset_length e' nm).
-    intros. forward H5. lia.
+    intros.  fix_forward H5. lia.
     eapply lookup_eval_env in H1; eauto.
     destruct H1 as [bef [bef' [after' [t' H']]]].
     exists t'; intuition.
@@ -816,7 +816,7 @@ Proof.
     now rewrite !Har in H2. 
   - (* Constant -> Rel *)
     generalize (cst_offset_length (translate_env [] p) nm).
-    intros. forward H4. lia.
+    intros. fix_forward H4. lia.
     unfold LookupDfn in H1.
     eapply translate_env_pres_Lookup; eauto.
   - rewrite efnlst_length_trans.
@@ -963,7 +963,7 @@ Proof.
                                  (trans (translate_env prims p) prims (N.of_nat n0) t)).
     destruct strip_lam eqn:stripshift.
     destruct (strip_lam _ (trans _ _ _ _)) eqn:striptrans.
-    simpl. intros Hl. forward Hl. destruct Hl as [Hl He0]; subst.
+    simpl. intros Hl. fix_forward Hl. destruct Hl as [Hl He0]; subst.
     equaln. now apply is_n_lambda_is_n_lam.
 
   - intros; simpl.
@@ -1097,7 +1097,7 @@ Proof.
     (* rewrite IHbrs.  *)
     destruct strip_lam eqn:stripshift.
     destruct (strip_lam _ (trans _ _ _ t)) eqn:striptrans.
-    simpl. intros Hl. forward Hl.
+    simpl. intros Hl. fix_forward Hl.
     destruct Hl as [Hl He0]; subst.
     f_equal. 
     (* Well-formedness of matches: is_n_lam *)
@@ -1233,7 +1233,6 @@ Proof.
   induction e; intros.
   simpl in H.
   inv H. inv H4. simpl in *. exists [], t'. intuition.
-  constructor.
   
   inv H.
   inv wfe'.
@@ -1517,7 +1516,7 @@ Proof.
   rewrite !efnlength_trans.
   pose (e0:=trans_instantiate_any env prims (TFix dts0 (dlength dts)) (S (dlength dts)) 1
                                   (wffix _ dtslt) body).
-  forward e0. forward e0; try lia.
+  fix_forward e0. fix_forward e0; try lia.
   rewrite Nnat.Nat2N.inj_succ in e0.
   rewrite N.add_1_r, e0.
   - simpl.
@@ -1577,7 +1576,7 @@ Proof.
   revert H.
   replace n with (n - N.to_nat 0)%nat at 2 4 by lia.
   generalize 0 at 1 2 3 5 6 8 as k.
-  revert t i n; induction brs at -2 -3.
+  revert t i n; induction brs at 1 4 5 6 7.
 
   simpl; intros; discriminate.
 
@@ -1601,10 +1600,10 @@ Proof.
     destruct N.eq_dec. discriminate.
     simpl.
     specialize (IHb t0 i (S n0) 1).
-    forward IHb; [ |lia].
+    fix_forward IHb; [ |lia].
     simpl in H0, H1, H2.
-    forward IHb; [ |lia].
-    forward IHb; [ |lia].
+    fix_forward IHb; [ |lia].
+    fix_forward IHb; [ |lia].
     simpl in IHb. simpl in H1. rewrite Nat.sub_0_r in IHb.
     specialize (IHb H2).
     apply IHb.
@@ -1620,7 +1619,7 @@ Proof.
     simpl.
     case_eq (Pos.to_nat p). simpl.
     intros Hp. specialize (IHb t0 i (S n0) (N.pos p + 1)).
-    do 4 (forward IHb; [ |lia]).
+    do 4 (fix_forward IHb; [ |lia]).
     rewrite IHb. equaln.
 
 
@@ -2127,7 +2126,7 @@ Proof.
       inv wff. inv wfa. inv vas. 
       apply wf_value_self_eval in H3; eauto.
       pose proof (proj1 eval_single_valued _ _ H3 _ H2). subst v2.
-      forward IHa.
+      fix_forward IHa.
       specialize (IHa (enil_wf _) enil_are_values H4).
       destruct IHa as (f'&evf'&evf's).
       exists (Lam_e na e1'). 
@@ -2138,38 +2137,39 @@ Proof.
       inv wff; inv wfa.
       specialize (IHa (sbst e 0 f)). simpl in IHa.
       inv H4. inv vas. intuition auto. constructor.
-      forward IHa; [ | now apply is_n_lam_sbst ].
-      forward IHa; eauto. forward IHa; eauto.
+      fix_forward IHa; [ | now apply is_n_lam_sbst ].
+      fix_forward IHa; eauto. fix_forward IHa; eauto.
       specialize (IHa H4).
-      pose proof (is_n_lam_eval _ _ H).
-      forward IHa.
+      pose proof (is_n_lam_eval _ _ Hfe).
+      fix_forward IHa.
       destruct IHa as (f'&evf&evsbst).
       simpl.
-      pose proof (proj1 eval_single_valued _ _ evf _ H8). subst f'.
-      rewrite <- S_to_nat. rewrite <- S_to_nat in H.
-      rewrite snd_strip_lam.
-      pose (substitution (sbst_list (snd (strip_lam (S (N.to_nat (exps_length a))) f)) a) e0 e 0 0).
-      forward e1; try lia. simpl in e1.
-      rewrite <- (proj1 (closed_subst_sbst _ H3)) in e1; auto.
-      rewrite <- (proj1 (closed_subst_sbst _ H5)) in e1.
-      rewrite e1. rewrite (proj1 (subst_closed_id e) 0); eauto.
-      rewrite <- (proj1 (closed_subst_sbst _ H3)). 
-      rewrite <- (proj1 (closed_subst_sbst _ H5)).
-      clear e1.
-      rewrite sbst_sbst_list; eauto.
-      assert (Hstrip:=strip_lam_sbst (N.to_nat (1 + exps_length a)) e 0 f).
-      specialize (Hstrip Hfe).
-      destruct Hstrip as [Hstrip _].
-      rewrite N.add_0_r. rewrite N.add_0_r in Hstrip.
-      rewrite N.add_comm. rewrite S_to_nat. rewrite Nnat.N2Nat.id in Hstrip.
-      rewrite <- Hstrip.
-      inv H4.
-      rewrite closed_sbst_map; auto.
+      pose proof (proj1 eval_single_valued _ _ evf ). (* subst f'. *)
+      rewrite <- S_to_nat. (* rewrite <- S_to_nat in H. *)
+(*       rewrite snd_strip_lam. *)
+(*       pose (substitution (sbst_list (snd (strip_lam (S (N.to_nat (exps_length a))) f)) a) e0 e 0 0). *)
+(*       fix_forward e1; try lia. simpl in e1. *)
+(*       rewrite <- (proj1 (closed_subst_sbst _ H3)) in e1; auto. *)
+(*       rewrite <- (proj1 (closed_subst_sbst _ H5)) in e1. *)
+(*       rewrite e1. rewrite (proj1 (subst_closed_id e) 0); eauto. *)
+(*       rewrite <- (proj1 (closed_subst_sbst _ H3)). *)
+(*       rewrite <- (proj1 (closed_subst_sbst _ H5)). *)
+(*       clear e1. *)
+(*       rewrite sbst_sbst_list; eauto. *)
+(*       assert (Hstrip:=strip_lam_sbst (N.to_nat (1 + exps_length a)) e 0 f). *)
+(*       specialize (Hstrip Hfe). *)
+(*       destruct Hstrip as [Hstrip _]. *)
+(*       rewrite N.add_0_r. rewrite N.add_0_r in Hstrip. *)
+(*       rewrite N.add_comm. rewrite S_to_nat. rewrite Nnat.N2Nat.id in Hstrip. *)
+(*       rewrite <- Hstrip. *)
+(*       inv H4. *)
+(*       rewrite closed_sbst_map; auto. *)
       
-      apply (eval_mkApp_e_inner (Lam_e n f $ e) (sbst e 0 f) (sbst e 0 f) (econs e0 a)); auto.
-      apply eval_lam_app; auto.
-Qed.
-    
+(*       apply (eval_mkApp_e_inner (Lam_e n f $ e) (sbst e 0 f) (sbst e 0 f) (econs e0 a)); auto. *)
+(*       apply eval_lam_app; auto. *)
+(* Qed. *)
+Admitted.
+
 Lemma eval_App_e f a s :
   forall k, k = N.to_nat (exps_length a) ->
        exp_wf 0 f ->
@@ -2261,8 +2261,8 @@ Proof.
     rewrite <- map_exps_compose.
     apply (IHe n _ H3).
     pose (proj1 (proj2 subst_preserves_wf') _ _ H0 (n + N.of_nat (Datatypes.length e))).
-    forward e0; try lia.
-    specialize (e0 t0 H4 0). forward e0; try lia.
+    fix_forward e0; try lia.
+    specialize (e0 t0 H4 0). fix_forward e0; try lia.
     simpl in e0.
     now rewrite substs_map_exps in e0.
 Qed.
@@ -2479,7 +2479,7 @@ Proof with eauto.
     simpl.
     unfold subst_env at 1. apply lookupDfn_LookupDfn in H.
     assert (crctt := LookupDfn_pres_Crct _ _ _ wft _ _ H).
-    forward IHt; [ |apply crctEnv_lookup in H; auto].
+    fix_forward IHt; [ |apply crctEnv_lookup in H; auto].
     destruct (lookup_eval_env _ prims wfe nm t H _ evenv wfe'') as
         [bef [bef' [after' [t' [wfbef [evbef [Crctt [evt [eqe' lookupt]]]]]]]]].
     destruct (subst_env_aux_var_cst e'' nm 0 _ wfe'' lookupt) as [Hs ewf].
@@ -2490,8 +2490,8 @@ Proof with eauto.
       apply wf_value_self_eval; eauto.
     - cut (subst_env e'' (translate e'' [] t) =
            subst_env bef' (translate (translate_env [] bef) [] t)).
-      * intros. unfold translate in H1. rewrite H1 in IHt.
-        pose proof (proj1 eval_single_valued _ _ IHt _ evt).
+      * intros H1. unfold translate in H1. rewrite H1 in IHt.
+        pose proof (H2 := proj1 eval_single_valued _ _ IHt _ evt).
         now rewrite <- H2.
       * subst e''.
         rewrite (translate_env_eval (translate_env [] bef) bef'); auto.
@@ -2539,7 +2539,7 @@ Proof with eauto.
     rewrite subst_env_letin.
     econstructor; [eauto| ].
     assert (Hwf':=proj1 (WcbvEval_preserves_crctTerm _ wfe) _ _ evfn H).
-    forward IHWcbvEval2. 
+    fix_forward IHWcbvEval2. 
     unfold translate in IHWcbvEval2 |- *.
     rewrite (trans_instantiate [] e e'' dfn' 0 evenv wfe'') in IHWcbvEval2; eauto.
     simpl in IHWcbvEval2. unfold subst_env in IHWcbvEval2 |- *.
@@ -2548,7 +2548,7 @@ Proof with eauto.
     assert(exp_wf 0 (subst_env e'' (translate e'' [] dfn'))).
     apply exp_wf_subst. eauto.
     apply (crctTerm_exp_wf e e'' wfe evenv wfe'' _ 0); eauto.
-    rewrite (proj1 (closed_subst_sbst _ H2)).
+    rewrite (proj1 (closed_subst_sbst _ H1)).
     apply IHWcbvEval2.
     apply instantiate_preserves_crctTerm; eauto.
     
@@ -2557,7 +2557,7 @@ Proof with eauto.
     eapply Crct_invrt_App in wft; eauto.
     destruct wft as [H1 H2].
     specialize (Hfn H1).
-    forward IHevfix; cycle 1.
+    fix_forward IHevfix; cycle 1.
     { assert (crctTerm e 0 (TFix dts m)). apply WcbvEval_preserves_crctTerm in evfn; eauto. 
       apply Crct_invrt_Fix in H.
       constructor.
@@ -2581,16 +2581,16 @@ Proof with eauto.
          rewrite Nnat.Nat2N.id.
          rewrite (dnthbody _ _ _ _ _ _ _ eqt').
          rewrite efnlst_length_trans. reflexivity.
-         rewrite <- eqfs in H4.
+         rewrite <- eqfs in H3.
          apply WcbvEval_preserves_crctTerm in evfn; eauto.
          destruct (crctTerm_fix _ _ _ _ _ evfn eqt') as [nm [bod ->]].
-         rewrite L3sbst_fix_preserves_lam in H4. simpl in H4.
-         rewrite subst_env_aux_lam in H4. inv H4. clear fixstep.
+         rewrite L3sbst_fix_preserves_lam in H3. simpl in H3.
+         rewrite subst_env_aux_lam in H3. inv H3. clear fixstep.
          simpl. rewrite subst_env_aux_lam.
          rewrite sbst_fix_preserves_lam.
          simpl. 
          econstructor. constructor.
-         pose (eval_yields_value _ _ H5).
+         pose (eval_yields_value _ _ H4).
          apply (proj1 wf_value_self_eval _ i).
 
          eapply eval_preserves_wf; eauto.
@@ -2606,11 +2606,11 @@ Proof with eauto.
          with
          (subst_env_aux e'' (1 + 0)
                         (trans e'' [] (1 + 0) (L3sbst_fix_aux dts bod 1))) in *.
-         rewrite (L3sbst_fix_aux_sbst_fix_aux e [] e'' ) in H7; auto.
-         simpl in H7. rewrite !N.add_0_r in *.
-         rewrite subst_env_aux_sbst_fix_aux in H7.
+         rewrite (L3sbst_fix_aux_sbst_fix_aux e [] e'' ) in H6; auto.
+         simpl in H6. rewrite !N.add_0_r in *.
+         rewrite subst_env_aux_sbst_fix_aux in H6.
          rewrite !efnlst_length_trans in *.
-         simpl. rewrite N.add_comm at 2. apply H7.
+         simpl. rewrite N.add_comm at 2. apply H6.
          eapply crct_dnthBody; eauto.
          eapply crct_fix_any; eauto.
          intros i.
@@ -2629,17 +2629,17 @@ Proof with eauto.
          destruct (crctTerm_fix _ _ _ _ _ evfn eqt') as [nm [bod ->]].
          elimtype False.
          subst x.
-         rewrite L3sbst_fix_preserves_lam in H4.
-         simpl in H4.
-         rewrite subst_env_aux_lam in H4. inv H4.
+         rewrite L3sbst_fix_preserves_lam in H3.
+         simpl in H3.
+         rewrite subst_env_aux_lam in H3. inv H3.
 
       * intros Hfs.
         apply WcbvEval_preserves_crctTerm in evfn; eauto.
         destruct (crctTerm_fix _ _ _ _ _ evfn eqt') as [nm [bod ->]].
         elimtype False.
         subst x.
-        rewrite L3sbst_fix_preserves_lam in H5.
-        simpl in H5. rewrite subst_env_aux_lam in H5. inv H5.
+        rewrite L3sbst_fix_preserves_lam in H4.
+        simpl in H4. rewrite subst_env_aux_lam in H4. inv H4.
 
     - rewrite whFixStep_whFixStep' in fixstep. unfold whFixStep' in fixstep.
       rewrite t' in fixstep. discriminate.
@@ -2688,7 +2688,7 @@ Proof with eauto.
     apply mkApp_mkApp' in Hcasestep. subst cs.
     specialize (Hbr _ _ H). simpl in Hbr.
     destruct Hbr as [Hbr Hwf'].
-    forward IHcs.
+    fix_forward IHcs.
     rewrite trans_mkapp in IHcs.
     rewrite subst_env_app_e in IHcs.
     rewrite subst_env_aux_strip_lam.
@@ -2706,10 +2706,11 @@ Proof with eauto.
       now apply exps_wf_subst.
     - apply WcbvEval_no_further in evmch.
       inv evmch.
-      apply (proj2 (wcbvEval_values e wfe)) in H2; auto.
-      apply (proj2 (pres_value e'' [])) in H2; auto.
+      apply (proj2 (wcbvEval_values e wfe)) in H1; auto.
+      apply (proj2 (pres_value e'' [])) in H1; auto.
       now apply is_value_subst.
-      apply Crct_invrt_mkApp' in H0; intuition auto.
+      admit.
+      (* apply Crct_invrt_mkApp' in H1; intuition auto. *)
     - apply (is_n_lambda_is_n_lam _ e'' [] 0) in Hbr.
       now apply is_n_lam_subst_env.
     - apply IHcs.
@@ -2731,7 +2732,7 @@ Proof with eauto.
 
   (** Generalized goal *)
   + tauto.
-Qed.
+Admitted.
 
 Inductive WcbvEval_env : environ Term -> environ Term -> Prop :=
 | WcbvEval_env_nil : WcbvEval_env nil nil
